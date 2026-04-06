@@ -14,13 +14,6 @@ function applyConfigFixes(env) {
     if (workspace !== path.join(env.stateDir, "workspace")) currentRoots.add(workspace);
   }
   feishu.mediaLocalRoots = Array.from(currentRoots).sort();
-  for (const accountId of Object.keys(feishu.accounts ?? {})) {
-    feishu.accounts[accountId] = {
-      ...feishu.accounts[accountId],
-      typingIndicator: false,
-      streaming: false
-    };
-  }
   return config;
 }
 
@@ -134,7 +127,7 @@ export async function runApply({ json = false } = {}) {
     backupRoot,
     configBackup,
     monitorBackup,
-    configUpdated: configInspection.mediaRootsApplied && configInspection.typingReductionApplied && configInspection.streamingReductionApplied,
+    configUpdated: configInspection.mediaRootsApplied,
     monitorPatched: monitorInspection.mediaReplyPatchApplied,
     configValidated: true,
     gatewayRestart,

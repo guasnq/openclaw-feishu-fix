@@ -1,6 +1,10 @@
 import { buildReport } from "./report.js";
 import { formatStatus, printKv, printSection } from "./utils.js";
 
+function describePresence(enabledAccounts) {
+  return enabledAccounts.length > 0 ? `enabled (${enabledAccounts.join(", ")})` : "disabled";
+}
+
 function printHuman(report) {
   printSection("Environment");
   printKv("OpenClaw version", report.environment.packageVersion);
@@ -18,8 +22,8 @@ function printHuman(report) {
   printSection("Config");
   printKv("Media roots", `${formatStatus(report.checks.config.mediaRootsApplied)} (${report.checks.config.configuredMediaRoots.length} configured)`);
   if (report.checks.config.missingMediaRoots.length > 0) printKv("Missing media roots", report.checks.config.missingMediaRoots.join(", "));
-  printKv("Typing reduction", `${formatStatus(report.checks.config.typingReductionApplied)}${report.checks.config.accountsWithTypingEnabled.length ? ` (${report.checks.config.accountsWithTypingEnabled.join(", ")})` : ""}`);
-  printKv("Streaming reduction", `${formatStatus(report.checks.config.streamingReductionApplied)}${report.checks.config.accountsWithStreamingEnabled.length ? ` (${report.checks.config.accountsWithStreamingEnabled.join(", ")})` : ""}`);
+  printKv("Typing indicator", describePresence(report.checks.config.accountsWithTypingEnabled));
+  printKv("Streaming", describePresence(report.checks.config.accountsWithStreamingEnabled));
 
   printSection("Runtime Patch");
   printKv("Feishu media reply patch", formatStatus(report.checks.monitor.mediaReplyPatchApplied));

@@ -173,42 +173,44 @@ function buildIssues(env, checks) {
   }
   if (!checks.config.typingReductionApplied) {
     issues.push(makeIssue("feishu_typing_indicator_noise", {
-      title: "Feishu typingIndicator 仍开启，可能导致高频 API 调用",
-      severity: "medium",
+      title: "Feishu typingIndicator 已开启，这是体验/限流之间的可选权衡",
+      severity: "low",
       category: "config",
       detected: true,
-      summary: "持续的 typing keepalive 会额外增加 Feishu API 调用压力。",
+      summary: "开启 typingIndicator 能保留飞书里的处理中状态提示，但会增加少量 keepalive 调用。",
       evidence: {
         configPath: env.configPath,
         accountsWithTypingEnabled: checks.config.accountsWithTypingEnabled
       },
       guidance: {
-        strategy: "config_update",
+        strategy: "optional_config_tuning",
         targetFiles: [env.configPath],
         instructions: [
-          "在每个 channels.feishu.accounts.<accountId> 下显式写 typingIndicator: false。",
-          "如果确实需要 typing，再单独评估频率和 quota 风险。"
+          "如果你依赖飞书里的处理中/输入中状态提示，就保持 typingIndicator 开启。",
+          "只有在 Feishu API 调用量确实成为问题时，再针对具体 account 关闭 typingIndicator。",
+          "不要把关闭 typingIndicator 当成默认修复动作。"
         ]
       }
     }));
   }
   if (!checks.config.streamingReductionApplied) {
     issues.push(makeIssue("feishu_streaming_noise", {
-      title: "Feishu streaming 仍开启，可能增加消息更新和 API 噪音",
-      severity: "medium",
+      title: "Feishu streaming 已开启，这是体验/限流之间的可选权衡",
+      severity: "low",
       category: "config",
       detected: true,
-      summary: "Streaming/card 增量更新会提高 Feishu 消息修改频率。",
+      summary: "开启 streaming 能保留更强的流式反馈，但会提高消息更新频率。",
       evidence: {
         configPath: env.configPath,
         accountsWithStreamingEnabled: checks.config.accountsWithStreamingEnabled
       },
       guidance: {
-        strategy: "config_update",
+        strategy: "optional_config_tuning",
         targetFiles: [env.configPath],
         instructions: [
-          "在每个 channels.feishu.accounts.<accountId> 下显式写 streaming: false。",
-          "如果业务上强依赖 streaming，再单独做限流评估。"
+          "如果你更看重响应过程中的流式反馈，就保持 streaming 开启。",
+          "只有在消息更新频率或限流确实成问题时，再针对具体 account 关闭 streaming。",
+          "不要把关闭 streaming 当成默认修复动作。"
         ]
       }
     }));

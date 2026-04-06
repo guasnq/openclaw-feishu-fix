@@ -73,6 +73,7 @@ node ./bin/openclaw-feishu-fix.js verify
 `apply`
 - 可选专家模式
 - 会直接修改当前机器上的配置和运行时 bundle
+- 默认只修文件直发相关能力，不再默认关闭 Feishu 的 `typingIndicator/streaming`
 - 不建议作为对外默认使用路径
 
 `verify`

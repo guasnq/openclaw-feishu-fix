@@ -2,11 +2,15 @@ import { detectEnvironment } from "./detect.js";
 import { runChecks } from "./checks.js";
 import { formatStatus, printKv, printSection } from "./utils.js";
 
+function describePresence(enabledAccounts) {
+  return enabledAccounts.length > 0 ? `enabled (${enabledAccounts.join(", ")})` : "disabled";
+}
+
 function printHuman(result) {
   printSection("Verify");
   printKv("Config media roots", formatStatus(result.checks.config.mediaRootsApplied));
-  printKv("Typing reduction", formatStatus(result.checks.config.typingReductionApplied));
-  printKv("Streaming reduction", formatStatus(result.checks.config.streamingReductionApplied));
+  printKv("Typing indicator", describePresence(result.checks.config.accountsWithTypingEnabled));
+  printKv("Streaming", describePresence(result.checks.config.accountsWithStreamingEnabled));
   printKv("Media reply patch", formatStatus(result.checks.monitor.mediaReplyPatchApplied));
   printKv("Backoff guard", formatStatus(result.checks.monitor.backoffGuardPresent));
   printKv("Config validate", formatStatus(result.validation.configValidate.ok));
@@ -20,7 +24,7 @@ export async function runVerify({ json = false } = {}) {
   const env = await detectEnvironment();
   const checks = await runChecks(env);
   const validation = checks.validation;
-  const ok = checks.config.mediaRootsApplied && checks.config.typingReductionApplied && checks.config.streamingReductionApplied && checks.monitor.mediaReplyPatchApplied && validation.configValidate.ok && validation.workspaceMediaAccess.ok;
+  const ok = checks.config.mediaRootsApplied && checks.monitor.mediaReplyPatchApplied && validation.configValidate.ok && validation.workspaceMediaAccess.ok;
   const result = {
     ok,
     environment: {
