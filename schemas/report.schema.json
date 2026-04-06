@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openclaw-feishu-fix.local/schemas/report.schema.json",
+  "title": "OpenClaw Feishu Fix Report",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "supported",
+    "support",
+    "summary",
+    "environment",
+    "checks",
+    "issues"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "supported": {
+      "type": "boolean"
+    },
+    "support": {
+      "type": "object",
+      "required": [
+        "status",
+        "capabilities",
+        "reasons",
+        "patchFamily"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "supported",
+            "partial",
+            "unsupported"
+          ]
+        },
+        "patchFamily": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "object"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "code",
+              "level",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "warn",
+                  "error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "ok",
+        "issueCount",
+        "criticalCount",
+        "highCount"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "issueCount": {
+          "type": "integer"
+        },
+        "criticalCount": {
+          "type": "integer"
+        },
+        "highCount": {
+          "type": "integer"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "platform",
+        "arch",
+        "nodeVersion",
+        "stateDir",
+        "configPath",
+        "packageRoot",
+        "packageVersion",
+        "installMode",
+        "agentIds",
+        "feishuAccounts"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string"
+        },
+        "arch": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "nodeVersion": {
+          "type": "string"
+        },
+        "stateDir": {
+          "type": "string"
+        },
+        "configPath": {
+          "type": "string"
+        },
+        "packageRoot": {
+          "type": "string"
+        },
+        "packageVersion": {
+          "type": "string"
+        },
+        "installMode": {
+          "type": "string"
+        },
+        "openclawBinary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "monitorFeishuFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "localRootsEntry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "webMediaEntry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "agentIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "feishuAccounts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "object"
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "severity",
+          "category",
+          "detected",
+          "summary",
+          "evidence",
+          "guidance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "config",
+              "runtime",
+              "verification"
+            ]
+          },
+          "detected": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "guidance": {
+            "type": "object",
+            "required": [
+              "strategy",
+              "targetFiles",
+              "instructions"
+            ],
+            "properties": {
+              "strategy": {
+                "type": "string"
+              },
+              "targetFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "instructions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

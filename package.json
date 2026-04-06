@@ -1,0 +1,29 @@
+{
+  "name": "openclaw-feishu-fix",
+  "version": "0.1.0",
+  "description": "Reusable fixer for OpenClaw Feishu media sending and API call pressure issues",
+  "type": "module",
+  "private": false,
+  "keywords": [
+    "openclaw",
+    "feishu",
+    "diagnostics",
+    "agents",
+    "cli"
+  ],
+  "bin": {
+    "openclaw-feishu-fix": "./bin/openclaw-feishu-fix.js"
+  },
+  "scripts": {
+    "doctor": "node ./bin/openclaw-feishu-fix.js doctor",
+    "report": "node ./bin/openclaw-feishu-fix.js report --json",
+    "guide": "node ./bin/openclaw-feishu-fix.js guide",
+    "schema": "node ./bin/openclaw-feishu-fix.js schema",
+    "apply": "node ./bin/openclaw-feishu-fix.js apply",
+    "verify": "node ./bin/openclaw-feishu-fix.js verify"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
