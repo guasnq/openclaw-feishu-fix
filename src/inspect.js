@@ -26,10 +26,19 @@ export function inspectConfig(env) {
 }
 
 export async function inspectMonitorPatch(env) {
+  if (!env.monitorFeishuFile) {
+    return {
+      importApplied: false,
+      scopedRootsApplied: false,
+      sendMediaApplied: false,
+      mediaReplyPatchApplied: false,
+      backoffGuardPresent: false
+    };
+  }
   const content = await readText(env.monitorFeishuFile);
-  const importApplied = content.includes('getAgentScopedMediaLocalRoots') && content.includes('from "./local-roots-');
-  const scopedRootsApplied = content.includes("const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, agentId);");
-  const sendMediaApplied = content.includes("accountId,\n\t\t\t\t\tmediaLocalRoots") || content.includes("accountId,\n\t\t\t\tmediaLocalRoots");
+  const importApplied = /import\s+\{[^}]*getAgentScopedMediaLocalRoots[^}]*\}\s+from\s+"\.\/[^"]+\.js";/.test(content);
+  const scopedRootsApplied = /const mediaLocalRoots = getAgentScopedMediaLocalRoots\(cfg, agentId\);/.test(content);
+  const sendMediaApplied = /sendMediaFeishu\(\{[\s\S]*?mediaLocalRoots[\s\S]*?\}\);/.test(content);
   const backoffGuardPresent = content.includes("const FEISHU_BACKOFF_CODES = new Set([") && content.includes("function isFeishuBackoffError(err)") && content.includes("async function addTypingIndicator(params)");
   return {
     importApplied,

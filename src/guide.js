@@ -5,6 +5,7 @@ function buildGuideLines(report) {
   lines.push(`结论: ${report.summary.ok ? "当前未检测到这两类 Feishu 关键问题。" : `检测到 ${report.summary.issueCount} 个问题。`}`);
   lines.push(`环境: OpenClaw ${report.environment.packageVersion} | ${report.environment.platform}/${report.environment.arch}`);
   lines.push(`支持状态: ${report.support.status} | Patch family: ${report.support.patchFamily}`);
+  lines.push(`能力探测: helper=${report.environment.mediaHelperEntry ?? "not found"} | web-media=${report.environment.webMediaEntry ?? "not found"}`);
   if (report.support.reasons.length > 0) {
     lines.push("兼容性说明:");
     for (const reason of report.support.reasons) {
@@ -26,6 +27,7 @@ function buildGuideLines(report) {
   lines.push("");
   lines.push("给用户自己的 agent 的建议用法:");
   lines.push("- 先运行 `openclaw-feishu-fix report --json`。");
+  lines.push("- 先看 support.status 和 support.reasons，再决定是否允许改 runtime。");
   lines.push("- 让 agent 读取 issues 数组，按 targetFiles 和 instructions 执行。");
   lines.push("- 修改完成后，再运行 `openclaw-feishu-fix verify`。");
   return lines;

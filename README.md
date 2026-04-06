@@ -18,6 +18,7 @@
 - 安装位置
 - 平台和架构
 - Feishu 相关 dist 结构是否可识别
+- `getAgentScopedMediaLocalRoots` 和 `loadWebMedia` 分别落在哪个 bundle
 
 2. 诊断问题
 - `mediaLocalRoots` 是否覆盖各 agent workspace
@@ -109,6 +110,18 @@ openclaw-feishu-fix verify
 - 跨版本问题探测器
 - agent 可消费的修复指引源
 
+## 兼容策略
+
+这个工具不再按 `local-roots-*.js`、`web-media-*.js` 这种固定文件名做硬匹配。
+
+它会优先按能力识别：
+
+- 哪个 bundle 导出了 `getAgentScopedMediaLocalRoots`
+- 哪个 bundle 导出了 `loadWebMedia`
+- Feishu monitor bundle 是否已经把 `mediaLocalRoots` 透传进 `sendMediaFeishu(...)`
+
+这意味着即便 OpenClaw 后续把 helper 从 `web-media-*` 拆到 `local-roots-*`、`local-file-access-*`，或者继续调整 bundle 命名，只要语义能力还在，`doctor`/`report` 就能继续工作。
+
 ## 输出协议
 
 - JSON schema: [schemas/report.schema.json](/Users/mac/AI_develop/openclaw-feishu-fix/schemas/report.schema.json)
@@ -141,6 +154,6 @@ openclaw-feishu-fix verify
 
 ## 当前兼容性
 
-第一版优先面向 Homebrew / npm 全局安装的 OpenClaw，并按当前 dist 结构检测 Feishu monitor bundle。
+第一版优先面向 Homebrew / npm 全局安装的 OpenClaw，并按 runtime 能力结构检测 Feishu monitor bundle。
 
 如果某次 OpenClaw 大版本重构导致 bundle 结构变化，`doctor`/`verify` 会先报不支持，而不是盲改。

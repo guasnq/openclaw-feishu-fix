@@ -9,6 +9,10 @@ function printHuman(report) {
   printKv("Binary", report.environment.openclawBinary ?? "not found");
   printKv("Config", report.environment.configPath);
   printKv("Feishu monitor bundle", report.environment.monitorFeishuFile);
+  printKv("Media helper bundle", report.environment.mediaHelperEntry ?? "not found");
+  printKv("Media helper export", report.environment.mediaHelperExportAlias ?? "not found");
+  printKv("Web media bundle", report.environment.webMediaEntry ?? "not found");
+  printKv("Web media export", report.environment.webMediaExportAlias ?? "not found");
   printKv("Platform", `${report.environment.platform}/${report.environment.arch}`);
 
   printSection("Config");

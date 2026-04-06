@@ -3,6 +3,13 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { inspectConfig, inspectMonitorPatch } from "./inspect.js";
 
+function resolveFunctionByName(moduleNamespace, functionName) {
+  for (const value of Object.values(moduleNamespace)) {
+    if (typeof value === "function" && value.name === functionName) return value;
+  }
+  return null;
+}
+
 export function runConfigValidate(env) {
   try {
     execFileSync("openclaw", ["config", "validate"], {
@@ -27,10 +34,26 @@ export async function runWorkspaceMediaAccessCheck(env) {
       agentId: null
     };
   }
+  if (!env.webMediaEntry || !env.mediaHelperEntry) {
+    return {
+      ok: false,
+      reason: "Required runtime capability modules were not detected",
+      sampleFile: env.workspaceSampleFile,
+      agentId: null
+    };
+  }
   const webMediaModule = await import(pathToFileURL(path.join(env.distDir, env.webMediaEntry)).href);
-  const localRootsModule = await import(pathToFileURL(path.join(env.distDir, env.localRootsEntry)).href);
-  const loadWebMedia = webMediaModule.t;
-  const getAgentScopedMediaLocalRoots = localRootsModule.n;
+  const mediaHelperModule = await import(pathToFileURL(path.join(env.distDir, env.mediaHelperEntry)).href);
+  const loadWebMedia = resolveFunctionByName(webMediaModule, "loadWebMedia");
+  const getAgentScopedMediaLocalRoots = resolveFunctionByName(mediaHelperModule, "getAgentScopedMediaLocalRoots");
+  if (!loadWebMedia || !getAgentScopedMediaLocalRoots) {
+    return {
+      ok: false,
+      reason: "Required runtime exports were detected in dist, but could not be resolved by function name",
+      sampleFile: env.workspaceSampleFile,
+      agentId: null
+    };
+  }
   const sampleAgentId = env.config.agents?.list?.find((agent) => env.workspaceSampleFile.startsWith(`${agent.workspace}/`))?.id;
   if (!sampleAgentId) {
     return {

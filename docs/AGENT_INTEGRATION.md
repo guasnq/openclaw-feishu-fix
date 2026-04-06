@@ -40,6 +40,10 @@ openclaw-feishu-fix verify
 - `summary.ok`
 - `support.status`
 - `support.patchFamily`
+- `environment.mediaHelperEntry`
+- `environment.mediaHelperExportAlias`
+- `environment.webMediaEntry`
+- `environment.webMediaExportAlias`
 - `issues[].id`
 - `issues[].severity`
 - `issues[].guidance.strategy`

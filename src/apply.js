@@ -24,12 +24,12 @@ function applyConfigFixes(env) {
   return config;
 }
 
-function insertImportIfMissing(content, localRootsEntry) {
-  if (content.includes('getAgentScopedMediaLocalRoots') && content.includes('from "./local-roots-')) return content;
-  return content.replace(
-    /\n(import .* from "node:fs";|import .* from "node:path";)/,
-    `\nimport { n as getAgentScopedMediaLocalRoots } from "./${localRootsEntry}";$1`
-  );
+function insertImportIfMissing(content, helperEntry, helperExportAlias) {
+  if (/import\s+\{[^}]*getAgentScopedMediaLocalRoots[^}]*\}\s+from\s+"\.\/[^"]+\.js";/.test(content)) return content;
+  const importBlock = content.match(/^(?:import .*;\n)+/);
+  if (!importBlock) throw new Error("Unable to locate import block in Feishu monitor bundle.");
+  const importLine = `import { ${helperExportAlias} as getAgentScopedMediaLocalRoots } from "./${helperEntry}";\n`;
+  return `${importBlock[0]}${importLine}${content.slice(importBlock[0].length)}`;
 }
 
 function insertScopedRootsIfMissing(content) {
@@ -51,9 +51,9 @@ function injectMediaRootsIntoSendMedia(content) {
   );
 }
 
-function applyMonitorPatch(content, localRootsEntry) {
+function applyMonitorPatch(content, helperEntry, helperExportAlias) {
   let next = content;
-  next = insertImportIfMissing(next, localRootsEntry);
+  next = insertImportIfMissing(next, helperEntry, helperExportAlias);
   next = insertScopedRootsIfMissing(next);
   next = injectMediaRootsIntoSendMedia(next);
   return next;
@@ -105,6 +105,12 @@ function printHuman(result) {
 
 export async function runApply({ json = false } = {}) {
   const env = await detectEnvironment();
+  if (!env.monitorFeishuFile) {
+    throw new Error("Feishu monitor bundle not detected. Refusing to apply runtime patch.");
+  }
+  if (!env.mediaHelperEntry || !env.mediaHelperExportAlias) {
+    throw new Error("Runtime helper module/export for getAgentScopedMediaLocalRoots was not detected. Refusing to patch blindly.");
+  }
   const backupRoot = path.join(env.backupRoot, nowStamp());
   await ensureDir(backupRoot);
 
@@ -115,7 +121,7 @@ export async function runApply({ json = false } = {}) {
   await writeJsonFile(env.configPath, nextConfig);
 
   const monitorBefore = await readText(env.monitorFeishuFile);
-  const monitorAfter = applyMonitorPatch(monitorBefore, env.localRootsEntry);
+  const monitorAfter = applyMonitorPatch(monitorBefore, env.mediaHelperEntry, env.mediaHelperExportAlias);
   await writeText(env.monitorFeishuFile, monitorAfter);
 
   runConfigValidate(env);

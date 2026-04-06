@@ -151,13 +151,25 @@
             "null"
           ]
         },
-        "localRootsEntry": {
+        "mediaHelperEntry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mediaHelperExportAlias": {
           "type": [
             "string",
             "null"
           ]
         },
         "webMediaEntry": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "webMediaExportAlias": {
           "type": [
             "string",
             "null"

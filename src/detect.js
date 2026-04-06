@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import fsp from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { expandHome, fileExists, firstExistingPath, readJsonFile, safeExec, uniqueSorted } from "./utils.js";
 
@@ -44,9 +43,55 @@ async function resolveMonitorFeishuFile(distDir) {
   }
 }
 
-async function resolveDistEntry(distDir, prefix) {
-  const entries = await fsp.readdir(distDir);
-  return entries.find((entry) => entry.startsWith(prefix) && entry.endsWith(".js"));
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function scoreMediaHelperCandidate(entry, content) {
+  let score = 0;
+  if (entry.startsWith("local-roots-")) score += 50;
+  if (entry.startsWith("local-file-access-")) score += 40;
+  if (entry.startsWith("web-media-")) score += 30;
+  if (content.includes("function getAgentScopedMediaLocalRoots(")) score += 20;
+  if (content.includes("getAgentScopedMediaLocalRootsForSources")) score += 10;
+  return score;
+}
+
+function scoreWebMediaCandidate(entry, content) {
+  let score = 0;
+  if (entry.startsWith("web-media-")) score += 50;
+  if (content.includes("async function loadWebMedia(")) score += 20;
+  if (content.includes("async function loadWebMediaInternal(")) score += 10;
+  return score;
+}
+
+function resolveExportAlias(content, symbolName) {
+  const match = content.match(new RegExp(`\\b${escapeRegExp(symbolName)}\\s+as\\s+([A-Za-z_$][\\w$]*)`));
+  return match?.[1] ?? null;
+}
+
+async function detectDistCapabilities(distDir) {
+  const entries = (await fsp.readdir(distDir)).filter((entry) => entry.endsWith(".js"));
+  const metadata = [];
+  for (const entry of entries) {
+    const fullPath = path.join(distDir, entry);
+    const content = await fsp.readFile(fullPath, "utf8");
+    metadata.push({ entry, fullPath, content });
+  }
+  const mediaHelperCandidates = metadata
+    .filter(({ content }) => content.includes("getAgentScopedMediaLocalRoots"))
+    .sort((a, b) => scoreMediaHelperCandidate(b.entry, b.content) - scoreMediaHelperCandidate(a.entry, a.content));
+  const webMediaCandidates = metadata
+    .filter(({ content }) => content.includes("loadWebMedia"))
+    .sort((a, b) => scoreWebMediaCandidate(b.entry, b.content) - scoreWebMediaCandidate(a.entry, a.content));
+  const mediaHelper = mediaHelperCandidates[0];
+  const webMedia = webMediaCandidates[0];
+  return {
+    mediaHelperEntry: mediaHelper?.entry ?? null,
+    mediaHelperExportAlias: mediaHelper ? resolveExportAlias(mediaHelper.content, "getAgentScopedMediaLocalRoots") : null,
+    webMediaEntry: webMedia?.entry ?? null,
+    webMediaExportAlias: webMedia ? resolveExportAlias(webMedia.content, "loadWebMedia") : null
+  };
 }
 
 function collectAgentWorkspaces(config) {
@@ -103,14 +148,9 @@ export async function detectEnvironment() {
   const pkg = readJsonFile(packageJsonPath);
   const distDir = path.join(packageRoot, "dist");
   const monitorFeishuFile = await resolveMonitorFeishuFile(distDir);
-  if (!monitorFeishuFile) throw new Error(`Feishu monitor bundle not found under ${distDir}`);
   const config = readJsonFile(configPath);
   const agentWorkspaces = collectAgentWorkspaces(config);
-  const localRootsEntry = await resolveDistEntry(distDir, "local-roots-");
-  const webMediaEntry = await resolveDistEntry(distDir, "web-media-");
-  if (!localRootsEntry || !webMediaEntry) {
-    throw new Error(`Required dist modules not found under ${distDir} (local-roots/web-media).`);
-  }
+  const distCapabilities = await detectDistCapabilities(distDir);
   return {
     stateDir,
     configPath,
@@ -120,9 +160,11 @@ export async function detectEnvironment() {
     distDir,
     packageVersion: pkg.version,
     openclawBinary: resolveOpenClawBinary(),
-    monitorFeishuFile,
-    localRootsEntry,
-    webMediaEntry,
+    monitorFeishuFile: monitorFeishuFile ?? null,
+    mediaHelperEntry: distCapabilities.mediaHelperEntry,
+    mediaHelperExportAlias: distCapabilities.mediaHelperExportAlias,
+    webMediaEntry: distCapabilities.webMediaEntry,
+    webMediaExportAlias: distCapabilities.webMediaExportAlias,
     agentIds: listAgentIds(config),
     agentWorkspaces,
     feishuAccounts: listFeishuAccounts(config),

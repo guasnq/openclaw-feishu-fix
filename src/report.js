@@ -14,22 +14,31 @@ function compareVersionPrefix(version, prefix) {
   return typeof version === "string" && version.startsWith(prefix);
 }
 
+function classifyPatchFamily(env) {
+  if (!env.mediaHelperEntry) return "unknown";
+  if (env.mediaHelperEntry === env.webMediaEntry) return "openclaw-web-media-shared";
+  if (env.mediaHelperEntry.startsWith("local-roots-")) return "openclaw-local-roots-split";
+  if (env.mediaHelperEntry.startsWith("local-file-access-")) return "openclaw-local-file-access-split";
+  return "openclaw-custom-media-helper";
+}
+
 function buildSupport(env, checks) {
   const capabilities = {
     inspectConfig: Boolean(env.configPath),
     inspectRuntimeBundle: Boolean(env.monitorFeishuFile),
-    verifyWorkspaceMediaAccess: Boolean(env.webMediaEntry && env.localRootsEntry && env.workspaceSampleFile),
+    detectMediaHelper: Boolean(env.mediaHelperEntry && env.mediaHelperExportAlias),
+    verifyWorkspaceMediaAccess: Boolean(env.webMediaEntry && env.mediaHelperEntry && env.workspaceSampleFile),
     suggestConfigFixes: true,
-    suggestRuntimeFixes: Boolean(env.monitorFeishuFile),
+    suggestRuntimeFixes: Boolean(env.monitorFeishuFile && env.mediaHelperEntry),
     autoApplyConfigFixes: true,
-    autoApplyRuntimeFixes: Boolean(env.monitorFeishuFile)
+    autoApplyRuntimeFixes: Boolean(env.monitorFeishuFile && env.mediaHelperEntry && env.mediaHelperExportAlias)
   };
   const reasons = [];
-  if (!compareVersionPrefix(env.packageVersion, "2026.4.")) {
+  if (!compareVersionPrefix(env.packageVersion, "2026.3.") && !compareVersionPrefix(env.packageVersion, "2026.4.")) {
     reasons.push({
       code: "runtime_family_unconfirmed",
       level: "warn",
-      message: `当前 runtime patch 主要按 2026.4.x 的 bundle 结构验证；当前版本是 ${env.packageVersion}。`
+      message: `当前 runtime patch 主要按 2026.3.x / 2026.4.x 的 bundle 能力结构验证；当前版本是 ${env.packageVersion}。`
     });
   }
   if (!env.monitorFeishuFile) {
@@ -37,6 +46,20 @@ function buildSupport(env, checks) {
       code: "feishu_monitor_bundle_not_found",
       level: "error",
       message: "未识别到 Feishu monitor bundle，无法做 runtime 级诊断。"
+    });
+  }
+  if (!env.mediaHelperEntry || !env.mediaHelperExportAlias) {
+    reasons.push({
+      code: "media_helper_capability_not_found",
+      level: "error",
+      message: "未识别到 getAgentScopedMediaLocalRoots 所在模块或导出别名，runtime 修复只能降级为人工指引。"
+    });
+  }
+  if (!env.webMediaEntry || !env.webMediaExportAlias) {
+    reasons.push({
+      code: "web_media_capability_not_found",
+      level: "warn",
+      message: "未识别到 loadWebMedia 所在模块或导出别名，workspace 媒体加载验证会降级。"
     });
   }
   if (!env.workspaceSampleFile) {
@@ -60,7 +83,7 @@ function buildSupport(env, checks) {
     status,
     capabilities,
     reasons,
-    patchFamily: compareVersionPrefix(env.packageVersion, "2026.4.") ? "openclaw-2026.4.x" : "unknown"
+    patchFamily: classifyPatchFamily(env)
   };
 }
 
@@ -110,6 +133,8 @@ function buildIssues(env, checks) {
       summary: "即便配置里有 mediaLocalRoots，Feishu 回复链路仍可能把 workspace 文件误判为不允许发送。",
       evidence: {
         monitorFeishuFile: env.monitorFeishuFile,
+        mediaHelperEntry: env.mediaHelperEntry,
+        mediaHelperExportAlias: env.mediaHelperExportAlias,
         importApplied: checks.monitor.importApplied,
         scopedRootsApplied: checks.monitor.scopedRootsApplied,
         sendMediaApplied: checks.monitor.sendMediaApplied
@@ -121,6 +146,7 @@ function buildIssues(env, checks) {
           "找到 Feishu reply dispatcher 中的 sendMediaReplies。",
           "在该 dispatcher 作用域里先计算 getAgentScopedMediaLocalRoots(cfg, agentId)。",
           "调用 sendMediaFeishu(...) 时，把 mediaLocalRoots 透传进去。",
+          "helper 模块不要按 local-roots-*.js 写死，要按 getAgentScopedMediaLocalRoots 能力所在 bundle 来定位。",
           "改完后重启 gateway，并用 workspace 内真实附件做一次发送验证。"
         ]
       }
@@ -257,8 +283,10 @@ export async function buildReport() {
       installMode: buildInstallMode(env),
       openclawBinary: env.openclawBinary || null,
       monitorFeishuFile: env.monitorFeishuFile,
-      localRootsEntry: env.localRootsEntry,
+      mediaHelperEntry: env.mediaHelperEntry,
+      mediaHelperExportAlias: env.mediaHelperExportAlias,
       webMediaEntry: env.webMediaEntry,
+      webMediaExportAlias: env.webMediaExportAlias,
       agentIds: env.agentIds,
       feishuAccounts: env.feishuAccounts
     },
